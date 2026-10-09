@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELD-101 การออกแบบและพัฒนา e-Learning</title>
+    <!-- Google Fonts: Prompt & Sarabun with Fallbacks -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['selector', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                        heading: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        accent: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --sidebar-bg: #ffffff;
+        }
+        [data-theme="dark"] {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --sidebar-bg: #1e293b;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Sarabun', sans-serif;
+            font-size: 17px;
+            line-height: 1.7;
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Prompt', sans-serif;
+        }
+        .content-width {
+            max-width: 68ch;
+        }
+        /* Respect user motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        /* Focus visible styles for accessibility */
+        focus-visible {
+            outline: 3px solid #0d9488;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col">
+
+    <!-- Top Header Navigation -->
+    <header role="banner" class="bg-brand-800 text-white shadow-md z-20 flex items-center justify-between px-4 py-3 shrink-0">
+        <div class="flex items-center space-x-3">
+            <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg bg-brand-700 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-white" aria-label="เปิดเมนูสารบัญ">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 class="font-heading font-semibold text-lg md:text-xl truncate">ELD-101 การออกแบบและพัฒนา e-Learning</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div id="user-display" class="hidden sm:block text-sm bg-brand-700 px-3 py-1 rounded-full text-brand-100">ผู้เรียน: <span id="header-nickname">-</span></div>
+            <button id="theme-toggle" class="p-2 rounded-lg bg-brand-700 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-white text-sm flex items-center space-x-1" aria-label="สลับธีมสี">
+                <span id="theme-icon">🌓</span> <span class="hidden sm:inline">ธีม</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Sidebar Navigation (Desktop & Mobile Drawer) -->
+        <aside id="sidebar" class="absolute md:relative inset-y-0 left-0 z-30 w-72 bg-[var(--sidebar-bg)] border-r border-[var(--border-color)] flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shadow-lg md:shadow-none">
+            <div class="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
+                <span class="font-heading font-bold text-base">สารบัญบทเรียน</span>
+                <button id="close-sidebar" class="md:hidden p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700" aria-label="ปิดเมนู">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <!-- Progress Bar inside Sidebar -->
+            <div class="p-4 border-b border-[var(--border-color)] bg-slate-50 dark:bg-slate-900/50">
+                <div class="flex justify-between text-xs mb-1 font-medium">
+                    <span>ความก้าวหน้าคอร์ส</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div id="sidebar-progress-bar" class="bg-brand-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- Navigation Links List -->
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1" role="navigation" aria-label="สารบัญหลัก">
+                <button onclick="router.navigateTo('home')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="home">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">🏠</span><span>หน้าแรก & วัตถุประสงค์</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+                <button onclick="router.navigateTo('pretest')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="pretest">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">📝</span><span>แบบทดสอบก่อนเรียน</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+                
+                <div class="pt-2 pb-1 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider font-heading">บทเรียน</div>
+                
+                <button onclick="router.navigateTo('lesson1')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="lesson1">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">1️⃣</span><span>บทที่ 1: ภาพรวม e-Learning & ADDIE</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+                <button onclick="router.navigateTo('lesson2')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="lesson2">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">2️⃣</span><span>บทที่ 2: การออกแบบการสอน</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+                <button onclick="router.navigateTo('lesson3')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="lesson3">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">3️⃣</span><span>บทที่ 3: การออกแบบสื่อและกิจกรรม</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+                <button onclick="router.navigateTo('lesson4')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="lesson4">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">4️⃣</span><span>บทที่ 4: การวัดผลและข้อมูลการเรียนรู้</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+
+                <div class="pt-2 pb-1 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider font-heading">สรุปผล</div>
+                
+                <button onclick="router.navigateTo('posttest')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="posttest">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">📊</span><span>แบบทดสอบหลังเรียน</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+                <button onclick="router.navigateTo('summary')" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-page="summary">
+                    <span class="flex items-center space-x-2"><span class="w-5 text-center">🏆</span><span>สรุปผลการเรียนรู้ & Gain</span></span>
+                    <span class="status-icon text-xs text-slate-400">○</span>
+                </button>
+            </nav>
+
+            <!-- Reset Progress Button (Requires 2 clicks confirmation) -->
+            <div class="p-3 border-t border-[var(--border-color)]">
+                <button id="reset-btn" onclick="handleResetClick()" class="w-full py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-xs font-medium transition-colors">
+                    🔄 เริ่มต้นใหม่ทั้งหมด (คลิก 2 ครั้ง)
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center">
+            <div class="content-width w-full">
+                <!-- Dynamic Page Container -->
+                <div id="page-container" class="space-y-6">
+                    <!-- Pages will be rendered here via JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Global Notification / Message Box Modal -->
+    <div id="message-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden" role="dialog" aria-modal="true">
+        <div class="bg-[var(--bg-card)] border border-[var(--border-color)] p-6 rounded-xl shadow-xl max-w-sm w-full mx-4 space-y-4">
+            <h3 id="modal-title" class="font-heading font-bold text-lg text-brand-600">แจ้งเตือน</h3>
+            <p id="modal-message" class="text-sm">ข้อความแจ้งเตือน...</p>
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors">ตกลง</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Course State Management with safe localStorage wrapper
+        const STORAGE_KEY = 'eld101_course_data_v1';
+        
+        let state = {
+            nickname: '',
+            currentSubPage: { lesson1: 0, lesson2: 0, lesson3: 0, lesson4: 0 },
+            completedPages: {},
+            pretestAnswers: {},
+            posttestAnswers: {},
+            pretestScore: null,
+            posttestScore: null,
+            lessonChecks: { lesson1: {}, lesson2: {}, lesson3: {}, lesson4: {} },
+            activitiesCompleted: { lesson1: false, lesson2: false, lesson3: false, lesson4: false },
+            currentPage: 'home'
+        };
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('localStorage is unavailable:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    state = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.warn('Failed to load from localStorage:', e);
+            }
+        }
+
+        function showMessage(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('message-modal').classList.add('hidden');
+        }
+
+        // Theme management
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+
+        function setTheme(isDark) {
+            if (isDark) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.innerText = '☀️';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeIcon.innerText = '🌙';
+            }
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            setTheme(!isDark);
+            try {
+                localStorage.setItem('eld101_theme', !isDark ? 'dark' : 'light');
+            } catch(e){}
+        });
+
+        // Initialize Theme preference
+        try {
+            const savedTheme = localStorage.getItem('eld101_theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                setTheme(true);
+            }
+        } catch(e) {}
+
+        // Question Bank for Pre-test and Post-test (Randomized options order mechanism supported)
+        const questionBank = [
+            {
+                id: 1,
+                lesson: 1,
+                question: "ข้อใดคือความหมายที่ถูกต้องที่สุดของ e-Learning ตามหลักวิชาการเทคโนโลยีการศึกษา?",
+                options: [
+                    "การเรียนรู้ผ่านเทคโนโลยีเว็บและการส่งผ่านเนื้อหาดิจิทัลเพื่อสนับสนุนการเรียนรู้ทุกที่ทุกเวลา",
+                    "การใช้อินเทอร์เน็ตเพื่อเล่นเกมการศึกษาในห้องเรียน",
+                    "การพิมพ์เอกสาร PDF แจกนักศึกษาทางอีเมล",
+                    "การสอนผ่านโปรแกรมวิดีโอคอลโดยไม่มีเอกสารประกอบ"
+                ],
+                answer: 0,
+                explanation: "e-Learning คือการเรียนรู้ผ่านเทคโนโลยีเว็บและสื่อดิจิทัลเพื่อส่งเสริมการเรียนรู้ได้ทุกเวลา (Ally, 2004)"
+            },
+            {
+                id: 2,
+                lesson: 1,
+                question: "ในกระบวนการออกแบบระบบการสอน ADDIE ขั้นตอนใดทำหน้าที่กำหนดกลยุทธ์การสอนและสร้างต้นแบบสื่อ?",
+                options: [
+                    "Analysis (การวิเคราะห์)",
+                    "Design (การออกแบบ)",
+                    "Development (การพัฒนา)",
+                    "Implementation (การนำไปใช้)"
+                ],
+                answer: 1,
+                explanation: "ขั้น Design (การออกแบบ) มุ่งเน้นการกำหนดกลยุทธ์การสอน โครงสร้าง และการสร้างต้นแบบ (Branch, 2009)"
+            },
+            {
+                id: 3,
+                lesson: 2,
+                question: "ตามแนวคิดของ Anderson & Krathwohl (2001) พฤติกรรมการเรียนรู้ระดับ 'การวิเคราะห์ (Analyze)' ตรงกับข้อใด?",
+                options: [
+                    "การท่องจำคำศัพท์สำคัญ",
+                    "การจำแนกส่วนประกอบและความสัมพันธ์ของข้อมูล",
+                    "การสร้างชิ้นงานใหม่ด้วยความคิดสร้างสรรค์",
+                    "การบอกความหมายของทฤษฎี"
+                ],
+                answer: 1,
+                explanation: "การวิเคราะห์ (Analyze) คือความสามารถในการแยกแยะข้อมูลออกเป็นส่วนย่อยและหาความสัมพันธ์ระหว่างกัน"
+            },
+            {
+                id: 4,
+                lesson: 2,
+                question: "เหตุการณ์การสอน (Events of Instruction) ข้อใดของ Gagné ที่ควรทำเป็นอันดับแรกสุดเพื่อดึงดูดความสนใจของผู้เรียน?",
+                options: [
+                    "แจ้งวัตถุประสงค์การเรียนรู้",
+                    "กระตุ้นการระลึกถึงความรู้เดิม",
+                    "เร้าความสนใจ (Gain attention)",
+                    "ให้ข้อมูลย้อนกลับ"
+                ],
+                answer: 2,
+                explanation: "เหตุการณ์แรกตาม Gagné คือ การเร้าความสนใจ (Gaining attention) เพื่อเตรียมความพร้อมของผู้เรียน"
+            },
+            {
+                id: 5,
+                lesson: 3,
+                question: "ตามหลักการออกแบบมัลติมีเดียของ Mayer หลักการ 'Coherence (ความสอดคล้อง)' แนะนำให้ปฏิบัติอย่างไร?",
+                options: [
+                    "ใส่เสียงเพลงบรรเลงประกอบตลอดเวลาเพื่อความสนุก",
+                    "ตัดภาพหรือเสียงที่ไม่จำเป็นออกเพื่อไม่ให้รบกวนการเรียนรู้",
+                    "ใช้ลูกศรชี้ตำแหน่งสำคัญบนหน้าจอ",
+                    "แสดงข้อความและเสียงบรรยายพร้อมกัน"
+                ],
+                answer: 1,
+                explanation: "หลัก Coherence ระบุว่าควรตัดสิ่งเร้าที่ไม่เกี่ยวข้อง (ภาพ/เสียงส่วนเกิน) ออก เพื่อลดภาระการรับรู้ (Mayer, 2009)"
+            },
+            {
+                id: 6,
+                lesson: 3,
+                question: "ปฏิสัมพันธ์ประเภทใดตามกรอบของ Moore (1989) ที่เกิดจากการโต้ตอบระหว่างผู้เรียนกับระบบคอมพิวเตอร์หรือบทเรียนอัจฉริยะ?",
+                options: [
+                    "Learner-Content Interaction",
+                    "Learner-Instructor Interaction",
+                    "Learner-Interface Interaction",
+                    "Learner-Learner Interaction"
+                ],
+                answer: 2,
+                explanation: "Learner-Interface Interaction คือการปฏิสัมพันธ์ระหว่างผู้เรียนกับเครื่องมือหรือส่วนต่อประสานระบบ (Hillman et al., 1994)"
+            },
+            {
+                id: 7,
+                lesson: 4,
+                question: "สูตร Normalized Gain ของ Hake (1998) มีประโยชน์สำคัญอย่างไรในการประเมินผลสัมฤทธิ์ทางการเรียน?",
+                options: [
+                    "วัดความพึงพอใจของผู้เรียนหลังเรียนจบ",
+                    "วัดสัดส่วนความก้าวหน้าที่แท้จริงโดยขจัดผลกระทบจากคะแนนก่อนเรียน",
+                    "คำนวณเวลาที่ใช้ในการเรียนออนไลน์",
+                    "ตรวจสอบความถูกต้องของข้อสอบก่อนเรียน"
+                ],
+                answer: 1,
+                explanation: "Normalized Gain วัดอัตราส่วนของคะแนนที่เพิ่มขึ้นจริงเทียบกับคะแนนที่สามารถเพิ่มได้สูงสุดที่เป็นไปได้ (Hake, 1998)"
+            },
+            {
+                id: 8,
+                lesson: 4,
+                question: "ในมาตรฐานการเก็บข้อมูลการเรียนรู้ xAPI โครงสร้างข้อมูลพื้นฐานประกอบด้วยองค์ประกอบใดบ้าง?",
+                options: [
+                    "Question - Answer - Score",
+                    "Actor - Verb - Object",
+                    "Teacher - Student - Lesson",
+                    "Input - Process - Output"
+                ],
+                answer: 1,
+                explanation: "xAPI ใช้โครงสร้างประโยค Statement สามส่วนหลักคือ Actor (ผู้กระทำ) - Verb (กริยา) - Object (เป้าหมาย)"
+            }
+        ];
+
+        // Router System
+        const router = {
+            navigateTo(pageId) {
+                state.currentPage = pageId;
+                saveState();
+                render();
+                updateSidebarActive();
+                // Scroll main content to top
+                const mainEl = document.getElementById('main-content');
+                if (mainEl) mainEl.scrollTop = 0;
+            }
+        };
+
+        function updateSidebarActive() {
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                if (btn.getAttribute('data-page') === state.currentPage) {
+                    btn.classList.add('bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-700', 'dark:text-brand-300');
+                } else {
+                    btn.classList.remove('bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-700', 'dark:text-brand-300');
+                }
+            });
+            updateProgressIndicators();
+        }
+
+        function updateProgressIndicators() {
+            // Calculate overall progress
+            const pages = ['home', 'pretest', 'lesson1', 'lesson2', 'lesson3', 'lesson4', 'posttest', 'summary'];
+            let completedCount = 0;
+            
+            pages.forEach(p => {
+                let isDone = false;
+                if (p === 'home' && state.nickname.trim().length > 0) isDone = true;
+                if (p === 'pretest' && state.pretestScore !== null) isDone = true;
+                if (p === 'lesson1' && state.activitiesCompleted.lesson1) isDone = true;
+                if (p === 'lesson2' && state.activitiesCompleted.lesson2) isDone = true;
+                if (p === 'lesson3' && state.activitiesCompleted.lesson3) isDone = true;
+                if (p === 'lesson4' && state.activitiesCompleted.lesson4) isDone = true;
+                if (p === 'posttest' && state.posttestScore !== null) isDone = true;
+                if (p === 'summary' && state.posttestScore !== null) isDone = true;
+
+                if (isDone) completedCount++;
+
+                const btn = document.querySelector(`[data-page="${p}"] .status-icon`);
+                if (btn) btn.innerText = isDone ? '✅' : '○';
+            });
+
+            const percent = Math.round((completedCount / pages.length) * 100);
+            document.getElementById('progress-percent').innerText = `${percent}%`;
+            document.getElementById('sidebar-progress-bar').style.width = `${percent}%`;
+        }
+
+        let resetClickCount = 0;
+        let resetTimer = null;
+        function handleResetClick() {
+            resetClickCount++;
+            const btn = document.getElementById('reset-btn');
+            if (resetClickCount === 1) {
+                btn.innerText = '⚠️ ยืนยันคลิกอีกครั้งเพื่อรีเซ็ต';
+                resetTimer = setTimeout(() => {
+                    resetClickCount = 0;
+                    btn.innerText = '🔄 เริ่มต้นใหม่ทั้งหมด (คลิก 2 ครั้ง)';
+                }, 4000);
+            } else if (resetClickCount >= 2) {
+                clearTimeout(resetTimer);
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                } catch(e){}
+                location.reload();
+            }
+        }
+
+        function renderHome() {
+            return `
+                <div class="bg-[var(--bg-card)] border border-[var(--border-color)] p-6 md:p-8 rounded-2xl shadow-sm space-y-6">
+                    <div class="space-y-2">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">รหัสวิชา: ELD-101</span>
+                        <h2 class="font-heading font-bold text-2xl md:text-3xl text-brand-800 dark:text-brand-400">การออกแบบและพัฒนา e-Learning</h2>
+                        <p class="text-[var(--text-muted)] text-sm">กลุ่มเป้าหมาย: นักศึกษาครูคอมพิวเตอร์ ชั้นปีที่ 3 | ระยะเวลาเรียน: ประมาณ 90 นาที</p>
+                    </div>
+
+                    <!-- Data privacy notice -->
+                    <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-4 rounded-xl text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                        <p class="font-bold">🔒 ประกาศความเป็นส่วนตัวและความปลอดภัยของข้อมูล:</p>
+                        <p>ระบบนี้เก็บข้อมูลเฉพาะชื่อเล่นหรือรหัสสมมติของคุณไว้ในเครื่องนี้เท่านั้นผ่าน <code class="bg-amber-100 dark:bg-amber-900 px-1 py-0.5 rounded">localStorage</code> ไม่มีการส่งข้อมูลส่วนบุคคลไปยังเซิร์ฟเวอร์ภายนอกใด ๆ</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="font-heading font-bold text-lg text-slate-800 dark:text-slate-200">วัตถุประสงค์การเรียนรู้ 4 ข้อ</h3>
+                        <ul class="space-y-2 text-sm text-[var(--text-main)]">
+                            <li class="flex items-start space-x-2"><span class="text-brand-600 font-bold">1.</span><span>อธิบายขั้นตอนของ ADDIE และผลงานที่ได้ในแต่ละขั้นอย่างถูกต้องตามหลักการ</span></li>
+                            <li class="flex items-start space-x-2"><span class="text-brand-600 font-bold">2.</span><span>เขียนวัตถุประสงค์ที่วัดได้และจัดลำดับบทเรียนตามทฤษฎีเหตุการณ์การสอนของ Gagné</span></li>
+                            <li class="flex items-start space-x-2"><span class="text-brand-600 font-bold">3.</span><span>วินิจฉัยปัญหาของสื่อการสอนด้วยหลักการมัลติมีเดียของ Mayer และเกณฑ์การเข้าถึง (WCAG 2.x AA)</span></li>
+                            <li class="flex items-start space-x-2"><span class="text-brand-600 font-bold">4.</span><span>เลือกหลักฐานและวิธีการประเมินผลการเรียนรู้ให้สอดคล้องกับระดับ Kirkpatrick</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="border-t border-[var(--border-color)] pt-6 space-y-4">
+                        <label for="nickname-input" class="block font-heading font-medium text-sm">ระบุชื่อเล่นหรือรหัสสมมติของคุณเพื่อเริ่มเรียน:</label>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="text" id="nickname-input" value="${state.nickname}" placeholder="เช่น ครูคอมพิวเตอร์_01" class="flex-1 px-4 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
+                            <button onclick="saveNicknameAndStart()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg text-sm transition-colors shadow-sm">
+                                เริ่มต้นเรียนรู้ 🚀
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveNicknameAndStart() {
+            const input = document.getElementById('nickname-input');
+            const val = input.value.trim();
+            if (!val) {
+                showMessage('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกชื่อเล่นหรือรหัสสมมติก่อนเริ่มต้นบทเรียน');
+                return;
+            }
+            state.nickname = val;
+            saveState();
+            document.getElementById('header-nickname').innerText = val;
+            document.getElementById('user-display').classList.remove('hidden');
+            router.navigateTo('pretest');
+        }
+
+        function renderTestPage(type) {
+            const isPre = type === 'pre';
+            const title = isPre ? 'แบบทดสอบก่อนเรียน (Pre-Test)' : 'แบบทดสอบหลังเรียน (Post-Test)';
+            const desc = isPre 
+                ? 'แบบทดสอบ 8 ข้อเพื่อวัดความรู้พื้นฐานเดิมของคุณ (ไม่มีการตัดผ่าน/ไม่ผ่าน)' 
+                : 'แบบทดสอบ 8 ข้อหลังเรียนจบครบทุกบท เพื่อเปรียบเทียบความก้าวหน้า (Normalized Gain)';
+            
+            const currentAnswers = isPre ? state.pretestAnswers : state.posttestAnswers;
+            const isSubmitted = isPre ? (state.pretestScore !== null) : (state.posttestScore !== null);
+
+            let html = `
+                <div class="bg-[var(--bg-card)] border border-[var(--border-color)] p-6 md:p-8 rounded-2xl shadow-sm space-y-6">
+                    <div class="space-y-1">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">${isPre ? 'ประเมินก่อนเรียน' : 'ประเมินหลังเรียน'}</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">${title}</h2>
+                        <p class="text-[var(--text-muted)] text-sm">${desc}</p>
+                    </div>
+                    <div class="space-y-6 pt-4">
+            `;
+
+            questionBank.forEach((q, qIndex) => {
+                // Generate consistent randomized order based on question ID and type
+                // To keep it deterministic per session, we use a simple shuffle seeded by q.id
+                const shuffledIndices = getShuffledIndices(q.id, q.options.length);
+                const selectedOpt = currentAnswers[q.id];
+
+                html += `
+                    <div class="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-3">
+                        <p class="font-heading font-medium text-sm text-[var(--text-main)]">ข้อที่ ${qIndex + 1}: ${q.question}</p>
+                        <div class="space-y-2 pt-1" role="radiogroup" aria-label="คำถามข้อที่ ${qIndex + 1}">
+                `;
+
+                shuffledIndices.forEach((origIdx, optIdx) => {
+                    const optText = q.options[origIdx];
+                    const isChecked = selectedOpt === origIdx;
+                    let optionStyle = "border-[var(--border-color)] hover:bg-slate-100 dark:hover:bg-slate-800";
+                    
+                    if (isSubmitted) {
+                        if (origIdx === q.answer) {
+                            optionStyle = "bg-emerald-100 dark:bg-emerald-950/50 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-medium";
+                        } else if (isChecked && origIdx !== q.answer) {
+                            optionStyle = "bg-red-100 dark:bg-red-950/50 border-red-500 text-red-900 dark:text-red-200";
+                        }
+                    } else if (isChecked) {
+                        optionStyle = "bg-brand-50 dark:bg-brand-950/50 border-brand-500 font-medium";
+                    }
+
+                    html += `
+                        <label class="flex items-center space-x-3 p-3 rounded-lg border ${optionStyle} cursor-pointer transition-colors text-sm">
+                            <input type="radio" name="q_${isPre ? 'pre' : 'post'}_${q.id}" value="${origIdx}" ${isChecked ? 'checked' : ''} ${isSubmitted ? 'disabled' : ''} onchange="handleAnswerSelect('${type}', ${q.id}, ${origIdx})" class="text-brand-600 focus:ring-brand-500">
+                            <span>${optText}</span>
+                        </label>
+                    `;
+                });
+
+                html += `</div>`;
+                if (isSubmitted) {
+                    html += `
+                        <div class="mt-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs text-[var(--text-muted)]">
+                            💡 <strong class="text-[var(--text-main)]">เฉลย:</strong> ${q.explanation}
+                        </div>
+                    `;
+                }
+                html += `</div>`;
+            });
+
+            html += `
+                    </div>
+                    <div class="flex justify-end pt-4">
+            `;
+
+            if (!isSubmitted) {
+                html += `<button onclick="submitTest('${type}')" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg text-sm transition-colors shadow-sm">ส่งคำตอบ ${isPre ? 'ก่อนเรียน' : 'หลังเรียน'}</button>`;
+            } else {
+                const score = isPre ? state.pretestScore : state.posttestScore;
+                html += `
+                    <div class="flex items-center justify-between w-full">
+                        <span class="font-heading font-bold text-brand-700 dark:text-brand-300">คะแนนของคุณ: ${score} / 8 คะแนน</span>
+                        <button onclick="router.navigateTo('${isPre ? 'lesson1' : 'summary'}')" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg text-sm transition-colors shadow-sm">
+                            ${isPre ? 'เริ่มบทที่ 1 ➔' : 'ดูสรุปผลภาพรวม ➔'}
+                        </button>
+                    </div>
+                `;
+            }
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        // Helper to shuffle options deterministically per question ID
+        function getShuffledIndices(seed, length) {
+            let indices = Array.from({length}, (_, i) => i);
+            // Simple pseudo-random shuffle based on seed
+            for (let i = length - 1; i > 0; i--) {
+                let j = (seed * 37 + i * 19) % length;
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            return indices;
+        }
+
+        function handleAnswerSelect(type, qId, optIdx) {
+            if (type === 'pre') {
+                state.pretestAnswers[qId] = optIdx;
+            } else {
+                state.posttestAnswers[qId] = optIdx;
+            }
+            saveState();
+        }
+
+        function submitTest(type) {
+            const isPre = type === 'pre';
+            const answers = isPre ? state.pretestAnswers : state.posttestAnswers;
+            
+            let score = 0;
+            questionBank.forEach(q => {
+                if (answers[q.id] === q.answer) {
+                    score++;
+                }
+            });
+
+            if (isPre) {
+                state.pretestScore = score;
+            } else {
+                state.posttestScore = score;
+            }
+            saveState();
+            render();
+            updateProgressIndicators();
+            showMessage('ส่งคำตอบสำเร็จ', `คุณทำคะแนนได้ ${score} จาก 8 คะแนน`);
+        }
+
+        function renderLesson1() {
+            const subPage = state.currentSubPage.lesson1 || 0;
+            const pagesTotal = 4;
+
+            let contentHtml = '';
+            if (subPage === 0) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 1 (หน้า 1/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">ภาพรวม e-Learning และรูปแบบการเรียนรู้</h2>
+                        <p><strong>e-Learning (การเรียนรู้ทางอิเล็กทรอนิกส์)</strong> คือการศึกษาที่ใช้เทคโนโลยีสารสนเทศและการสื่อสาร (ICT) เช่น อินเทอร์เน็ต เว็บไซต์ หรืออุปกรณ์พกพา เพื่อส่งมอบเนื้อหาความรู้ อำนวยความสะดวกในการปฏิสัมพันธ์ และประเมินผลการเรียนรู้โดยไม่จำกัดเวลาและสถานที่</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <h3 class="font-heading font-bold text-brand-600">⚡ Synchronous (การเรียนแบบซิงโครนัส)</h3>
+                                <p class="text-sm text-[var(--text-muted)]">ผู้เรียนและผู้สอนเรียนรู้พร้อมกันในเวลาเดียวกันผ่านเครื่องมือถ่ายทอดสด เช่น Zoom, Microsoft Teams หรือ Google Meet เหมาะกับการอภิปรายและถาม-ตอบทันที</p>
+                            </div>
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <h3 class="font-heading font-bold text-brand-600">⏳ Asynchronous (การเรียนแบบอะซิงโครนัส)</h3>
+                                <p class="text-sm text-[var(--text-muted)]">ผู้เรียนสามารถเข้าถึงบทเรียน วิดีโอบันทึก และทำกิจกรรมได้ตามความสะดวกของตนเองผ่านระบบ LMS เหมาะกับการเรียนรู้ด้วยตนเองและการทบทวน</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)] pt-2">แหล่งอ้างอิง: Ally, M. (2004). Foundations of educational theory for online learning.</p>
+                    </div>
+                `;
+            } else if (subPage === 1) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 1 (หน้า 2/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">กระบวนการออกแบบระบบการสอน ADDIE</h2>
+                        <p>โมเดล ADDIE เป็นกรอบการทำงานมาตรฐานในการออกแบบสื่อและบทเรียน e-Learning ประกอบด้วย 5 ขั้นตอนสำคัญดังตารางด้านล่างนี้:</p>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse border border-[var(--border-color)]">
+                                <thead class="bg-slate-100 dark:bg-slate-800">
+                                    <tr>
+                                        <th class="border border-[var(--border-color)] p-2.5">ขั้นตอน</th>
+                                        <th class="border border-[var(--border-color)] p-2.5">คำถามหลัก</th>
+                                        <th class="border border-[var(--border-color)] p-2.5">ผลงานที่ได้ (Deliverables)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">1. Analysis (วิเคราะห์)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ใครคือผู้เรียน? ต้องการเรียนรู้อะไร?</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">เอกสารวิเคราะห์ผู้เรียนและเนื้อหา</td>
+                                    </tr>
+                                    <tr class="bg-slate-50 dark:bg-slate-900/30">
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">2. Design (ออกแบบ)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">จะสอนอย่างไร และวัดผลอย่างไร?</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">โครงสร้างหลักสูตรและ Storyboard</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">3. Development (พัฒนา)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">สร้างสื่อและระบบจริงอย่างไร?</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ไฟล์บทเรียน e-Learning บน LMS</td>
+                                    </tr>
+                                    <tr class="bg-slate-50 dark:bg-slate-900/30">
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">4. Implementation (นำไปใช้)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ส่งมอบบทเรียนให้ผู้เรียนอย่างไร?</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">รายงานการใช้งานของนักศึกษา</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">5. Evaluation (ประเมินผล)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">หลักสูตรบรรลุเป้าหมายหรือไม่?</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ผลการประเมินและแนวทางปรับปรุง</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+                            📌 <strong>หมายเหตุสำคัญ:</strong> ADDIE ไม่จำเป็นต้องทำแบบทางเดียว (Linear) เสมอไป สามารถย้อนกลับไปปรับปรุงขั้นตอนก่อนหน้าได้ตลอดเวลา (Iterative Process)
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)]">แหล่งอ้างอิง: Branch, R. M. (2009). Instructional design: The ADDIE approach.</p>
+                    </div>
+                `;
+            } else if (subPage === 2) {
+                // Interactive Activity: Order ADDIE steps
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 1 (หน้า 3/4: กิจกรรมโต้ตอบ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">กิจกรรม: เรียงลำดับขั้นตอน ADDIE</h2>
+                        <p class="text-sm text-[var(--text-muted)]">จัดเรียงขั้นตอนโมเดล ADDIE ให้ถูกต้องตามลำดับการพัฒนา e-Learning (ใช้ปุ่มลูกศรขึ้น/ลง)</p>
+                        
+                        <div id="addie-activity-container" class="space-y-2 pt-2">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                        <div id="addie-feedback" class="text-sm font-medium"></div>
+                        <button onclick="checkAddieOrder()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors">ตรวจคำตอบกิจกรรม</button>
+                    </div>
+                `;
+            } else {
+                // Check for Understanding (2 items)
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 1 (หน้า 4/4: ตรวจความเข้าใจ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">ตรวจสอบความเข้าใจ บทที่ 1</h2>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">1. หากนักศึกษาต้องการสร้าง Storyboard และกำหนดโครงสร้างบทเรียน ควรอยู่ในขั้นใดของ ADDIE?</p>
+                                <div class="space-y-1.5" id="l1_q1_opts">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l1q1" value="0" onchange="checkLessonQuiz(1, 1, 0)"><span>ก. Analysis (วิเคราะห์)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l1q1" value="1" onchange="checkLessonQuiz(1, 1, 1)"><span>ข. Design (ออกแบบ)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l1q1" value="2" onchange="checkLessonQuiz(1, 1, 2)"><span>ค. Development (พัฒนา)</span></label>
+                                </div>
+                                <div id="l1q1_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">2. ข้อใดกล่าวถูกต้องที่สุดเกี่ยวกับลักษณะการทำงานของโมเดล ADDIE?</p>
+                                <div class="space-y-1.5" id="l1_q2_opts">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l1q2" value="0" onchange="checkLessonQuiz(1, 2, 0)"><span>ก. ต้องทำตามลำดับทางเดียวเด็ดขาด ห้ามย้อนกลับ</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l1q2" value="1" onchange="checkLessonQuiz(1, 2, 1)"><span>ข. เป็นกระบวนการที่ย้อนกลับไปปรับปรุงแก้ไขระหว่างขั้นตอนได้ (Iterative)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l1q2" value="2" onchange="checkLessonQuiz(1, 2, 2)"><span>ค. ใช้สำหรับการประเมินผลอย่างเดียวเท่านั้น</span></label>
+                                </div>
+                                <div id="l1q2_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return wrapLessonShell('lesson1', 'บทที่ 1: ภาพรวม e-Learning และ ADDIE', contentHtml, subPage, pagesTotal);
+        }
+
+        // Addie order activity state
+        let addieSteps = [
+            { id: 'dev', name: '3. Development (พัฒนาสื่อ)', correctIndex: 2 },
+            { id: 'ana', name: '1. Analysis (วิเคราะห์ผู้เรียน)', correctIndex: 0 },
+            { id: 'eva', name: '5. Evaluation (ประเมินผลภาพรวม)', correctIndex: 4 },
+            { id: 'des', name: '2. Design (ออกแบบโครงสร้าง)', correctIndex: 1 },
+            { id: 'imp', name: '4. Implementation (นำไปใช้จริง)', correctIndex: 3 }
+        ].sort(() => Math.random() - 0.5);
+
+        function renderAddieList() {
+            const container = document.getElementById('addie-activity-container');
+            if (!container) return;
+            container.innerHTML = addieSteps.map((step, idx) => `
+                <div class="flex items-center justify-between p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-sm">
+                    <span class="font-medium">${idx + 1}. ${step.name}</span>
+                    <div class="space-x-1">
+                        <button onclick="moveAddie(${idx}, -1)" class="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 rounded text-xs font-bold hover:bg-slate-300">⬆️</button>
+                        <button onclick="moveAddie(${idx}, 1)" class="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 rounded text-xs font-bold hover:bg-slate-300">⬇️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function moveAddie(index, direction) {
+            const newIdx = index + direction;
+            if (newIdx < 0 || newIdx >= addieSteps.length) return;
+            const temp = addieSteps[index];
+            addieSteps[index] = addieSteps[newIdx];
+            addieSteps[newIdx] = temp;
+            renderAddieList();
+        }
+
+        function checkAddieOrder() {
+            // Check if correct order: ana(0), des(1), dev(2), imp(3), eva(4)
+            const isCorrect = addieSteps[0].id === 'ana' &&
+                              addieSteps[1].id === 'des' &&
+                              addieSteps[2].id === 'dev' &&
+                              addieSteps[3].id === 'imp' &&
+                              addieSteps[4].id === 'eva';
+            
+            const fb = document.getElementById('addie-feedback');
+            if (isCorrect) {
+                fb.className = "text-sm font-medium text-emerald-600 dark:text-emerald-400";
+                fb.innerText = "🎉 ยอดเยี่ยม! คุณเรียงลำดับขั้นตอน ADDIE ได้ถูกต้องครบถ้วน";
+                state.activitiesCompleted.lesson1 = true;
+                saveState();
+                updateProgressIndicators();
+            } else {
+                fb.className = "text-sm font-medium text-red-600 dark:text-red-400";
+                fb.innerText = "❌ ลำดับยังไม่ถูกต้อง ลองตรวจสอบขั้นตอนเริ่มต้น (Analysis) และสิ้นสุด (Evaluation) อีกครั้ง";
+            }
+        }
+
+        function renderLesson2() {
+            const subPage = state.currentSubPage.lesson2 || 0;
+            const pagesTotal = 4;
+
+            let contentHtml = '';
+            if (subPage === 0) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 2 (หน้า 1/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">การเขียนวัตถุประสงค์ที่วัดได้และบลูมส์แทกโซโนมี</h2>
+                        <p>การออกแบบการสอนที่มีประสิทธิภาพต้องเริ่มต้นด้วยการกำหนดวัตถุประสงค์เชิงพฤติกรรมที่ชัดเจนและวัดผลได้ โดยอ้างอิงตาม <strong>Revised Bloom's Taxonomy (Anderson & Krathwohl, 2001)</strong> ซึ่งแบ่งระดับพฤติกรรมด้านพุทธิพิสัยเป็น 6 ระดับ:</p>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse border border-[var(--border-color)]">
+                                <thead class="bg-slate-100 dark:bg-slate-800">
+                                    <tr>
+                                        <th class="border border-[var(--border-color)] p-2.5">ระดับพฤติกรรม</th>
+                                        <th class="border border-[var(--border-color)] p-2.5">คำอธิบาย</th>
+                                        <th class="border border-[var(--border-color)] p-2.5">ตัวอย่างกริยาวิเคราะห์ (Verbs)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">1. Remember (จำ)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ดึงความรู้จากหน่วยความจำระยะยาว</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">บอก, ท่องจำ, ระบุ, ชี้</td>
+                                    </tr>
+                                    <tr class="bg-slate-50 dark:bg-slate-900/30">
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">2. Understand (เข้าใจ)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">สร้างความหมายจากสื่อการสอน</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">อธิบาย, สรุป, แปลความ</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">3. Apply (ประยุกต์ใช้)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ใช้วิธีการในสถานการณ์ใหม่</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">คำนวณ, ปฏิบัติ, สาธิต</td>
+                                    </tr>
+                                    <tr class="bg-slate-50 dark:bg-slate-900/30">
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">4. Analyze (วิเคราะห์)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">แยกแยะส่วนประกอบและความสัมพันธ์</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">จำแนก, เปรียบเทียบ, ตรวจสอบ</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">5. Evaluate (ประเมินค่า)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ตัดสินใจบนพื้นฐานเกณฑ์และมาตรฐาน</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ประเมิน, วิจารณ์, ตัดสิน</td>
+                                    </tr>
+                                    <tr class="bg-slate-50 dark:bg-slate-900/30">
+                                        <td class="border border-[var(--border-color)] p-2.5 font-bold">6. Create (คิดสร้างสรรค์)</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ประกอบส่วนต่างๆ เป็นชิ้นงานใหม่</td>
+                                        <td class="border border-[var(--border-color)] p-2.5">ออกแบบ, สร้างสรรค์, วางแผน</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)]">แหล่งอ้างอิง: Anderson, L. W., & Krathwohl, D. R. (2001). A taxonomy for learning, teaching, and assessing.</p>
+                    </div>
+                `;
+            } else if (subPage === 1) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 2 (หน้า 2/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">เหตุการณ์การสอน 9 ขั้นของ Gagné</h2>
+                        <p>โรเบิร์ต กาเย่ (Robert Gagné) ได้เสนอขั้นตอนการจัดการเรียนการสอน 9 ขั้นตอนที่ช่วยกระตุ้นกระบวนการประมวลผลสารสนเทศในสมองของผู้เรียน:</p>
+                        
+                        <div class="space-y-2 text-sm">
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>1. เร้าความสนใจ (Gain attention):</strong> กระตุ้นด้วยคำถามหรือสถานการณ์น่าตื่นเต้น</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>2. แจ้งวัตถุประสงค์ (Inform objectives):</strong> บอกให้นักศึกษารู้ว่าเรียนจบแล้วทำอะไรได้</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>3. กระตุ้นความรู้เดิม (Stimulate recall):</strong> เชื่อมโยงกับบทเรียนที่ผ่านมา</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>4. เสนอเนื้อหาใหม่ (Present stimulus):</strong> จัดระเบียบเนื้อหาให้ย่อยง่าย</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>5. ให้แนวทางเรียนรู้ (Provide guidance):</strong> ยกตัวอย่างและแผนผังช่วยจำ</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>6. กระตุ้นการแสดงออก (Elicit performance):</strong> ให้ทำกิจกรรมหรือแบบฝึกหัด</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>7. ให้ข้อมูลย้อนกลับ (Provide feedback):</strong> เฉลยและอธิบายทันที</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>8. ประเมินผลสัมฤทธิ์ (Assess performance):</strong> ทดสอบความเข้าใจ</div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]"><strong>9. ส่งเสริมการจำและการนำไปใช้ (Retention/Transfer):</strong> มอบหมายงานเชื่อมโยงชีวิตจริง</div>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)]">แหล่งอ้างอิง: Gagné, R. M., Briggs, L. J., & Wager, W. W. (1992). Principles of instructional design.</p>
+                    </div>
+                `;
+            } else if (subPage === 2) {
+                // Interactive Activity: Match classroom scenario with Gagné event
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 2 (หน้า 3/4: กิจกรรมโต้ตอบ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">กิจกรรม: จับคู่สถานการณ์กับเหตุการณ์ของ Gagné</h2>
+                        <p class="text-sm text-[var(--text-muted)]">เลือกเหตุการณ์ของ Gagné ให้ตรงกับสถานการณ์การสอนที่กำหนด</p>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="text-sm font-medium">สถานการณ์ A: อาจารย์เปิดคลิปวิดีโอสั้นประหลาดใจเพื่อเรียกสมาธิก่อนเริ่มบทเรียน e-Learning</p>
+                                <select id="gagne_match_1" class="w-full p-2 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-sm">
+                                    <option value="">-- เลือกเหตุการณ์ของ Gagné --</option>
+                                    <option value="1">1. เร้าความสนใจ (Gain attention)</option>
+                                    <option value="3">3. กระตุ้นความรู้เดิม (Stimulate recall)</option>
+                                    <option value="7">7. ให้ข้อมูลย้อนกลับ (Provide feedback)</option>
+                                </select>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="text-sm font-medium">สถานการณ์ B: ระบบแสดงข้อความสีเขียวพร้อมคำอธิบายทันทีหลังจากนักศึกษาคลิกตอบคำถามถูกต้อง</p>
+                                <select id="gagne_match_2" class="w-full p-2 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-sm">
+                                    <option value="">-- เลือกเหตุการณ์ของ Gagné --</option>
+                                    <option value="2">2. แจ้งวัตถุประสงค์</option>
+                                    <option value="7">7. ให้ข้อมูลย้อนกลับ (Provide feedback)</option>
+                                    <option value="9">9. ส่งเสริมการจำและการนำไปใช้</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="gagne-feedback" class="text-sm font-medium"></div>
+                        <button onclick="checkGagneActivity()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors">ตรวจสอบคำตอบ</button>
+                    </div>
+                `;
+            } else {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 2 (หน้า 4/4: ตรวจความเข้าใจ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">ตรวจสอบความเข้าใจ บทที่ 2</h2>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">1. วัตถุประสงค์ในข้อใดสอดคล้องกับระดับ 'Apply (ประยุกต์ใช้)' ตาม Bloom's Taxonomy?</p>
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l2q1" value="0" onchange="checkLessonQuiz(2, 1, 0)"><span>ก. ท่องจำชื่อขั้นตอน ADDIE ได้ถูกต้อง</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l2q1" value="1" onchange="checkLessonQuiz(2, 1, 1)"><span>ข. คำนวณค่า Normalized Gain จากคะแนนสอบได้</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l2q1" value="2" onchange="checkLessonQuiz(2, 1, 2)"><span>ค. ออกแบบระบบ e-Learning ทั้งระบบด้วยตนเอง</span></label>
+                                </div>
+                                <div id="l2q1_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">2. เหตุการณ์ใดตาม Gagné ที่ควรทำเป็นขั้นตอนสุดท้ายของการสอนแต่ละบท?</p>
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l2q2" value="0" onchange="checkLessonQuiz(2, 2, 0)"><span>ก. เร้าความสนใจผู้เรียน</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l2q2" value="1" onchange="checkLessonQuiz(2, 2, 1)"><span>ข. เสนอสิ่งเร้าและเนื้อหาใหม่</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l2q2" value="2" onchange="checkLessonQuiz(2, 2, 2)"><span>ค. ส่งเสริมการจำและการนำไปใช้ (Retention/Transfer)</span></label>
+                                </div>
+                                <div id="l2q2_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return wrapLessonShell('lesson2', 'บทที่ 2: การออกแบบการสอน', contentHtml, subPage, pagesTotal);
+        }
+
+        function checkGagneActivity() {
+            const v1 = document.getElementById('gagne_match_1').value;
+            const v2 = document.getElementById('gagne_match_2').value;
+            const fb = document.getElementById('gagne-feedback');
+
+            if (v1 === '1' && v2 === '7') {
+                fb.className = "text-sm font-medium text-emerald-600 dark:text-emerald-400";
+                fb.innerText = "🎉 ถูกต้องสมบูรณ์! การเปิดคลิปเรียกสมาธิคือขั้นที่ 1 และการให้ฟีดแบ็กทันทีคือขั้นที่ 7";
+                state.activitiesCompleted.lesson2 = true;
+                saveState();
+                updateProgressIndicators();
+            } else {
+                fb.className = "text-sm font-medium text-red-600 dark:text-red-400";
+                fb.innerText = "❌ ยังไม่ถูกต้องทั้งหมด โปรดตรวจสอบการจับคู่ใหม่อีกครั้ง";
+            }
+        }
+
+        function renderLesson3() {
+            const subPage = state.currentSubPage.lesson3 || 0;
+            const pagesTotal = 4;
+
+            let contentHtml = '';
+            if (subPage === 0) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 3 (หน้า 1/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">หลักการออกแบบมัลติมีเดียของ Mayer</h2>
+                        <p>Richard E. Mayer ได้ศึกษาเกี่ยวกับการทำงานของสมองมนุษย์ (Cognitive Theory of Multimedia Learning) และสรุปหลักการออกแบบสื่อ e-Learning ที่ลดภาระการรับรู้เกิน (Cognitive Load) ไว้ 5 หลักการหลัก:</p>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]">
+                                <strong>1. Coherence Principle (หลักความสอดคล้อง):</strong> ตัดภาพ เสียง หรือข้อความที่ไม่จำเป็นออก อย่าใส่อะไรที่รกหรือเพลงประกอบที่ไม่เกี่ยวข้อง
+                            </div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]">
+                                <strong>2. Signaling Principle (หลักการชี้นำ):</strong> ใช้ลูกศร ตัวหนา หรือไฮไลต์เน้นจุดสำคัญ เพื่อชี้นำความสนใจของผู้เรียนไปยังจุดที่ถูกต้อง
+                            </div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]">
+                                <strong>3. Segmenting Principle (หลักการแบ่งส่วน):</strong> แบ่งเนื้อหายาว ๆ เป็นตอนสั้น ๆ ให้ผู้เรียนกดคลิกไปทีละส่วนตามความเร็วของตนเอง
+                            </div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]">
+                                <strong>4. Spatial Contiguity Principle (หลักความต่อเนื่องทางพื้นที่):</strong> จัดวางข้อความและภาพที่เกี่ยวข้องกันให้อยู่ใกล้กันบนหน้าจอ ไม่แยกไว้คนละมุม
+                            </div>
+                            <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)]">
+                                <strong>5. Redundancy Principle (หลักความซ้ำซ้อน):</strong> หลีกเลี่ยงการแสดงข้อความตัวอักษรบนจอเหมือนกับเสียงบรรยายทุกประการพร้อมกัน เพื่อไม่ให้ช่องทางการมองเห็นรับภาระเกิน
+                            </div>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)] pt-2">แหล่งอ้างอิง: Mayer, R. E. (2009). Multimedia learning (2nd ed.).</p>
+                    </div>
+                `;
+            } else if (subPage === 1) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 3 (หน้า 2/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">ปฏิสัมพันธ์ 3 ประเภทของ Moore และการเข้าถึง (Accessibility)</h2>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-1">
+                                <h3 class="font-heading font-bold text-brand-600">🤝 ปฏิสัมพันธ์ 3 ประเภท (Moore, 1989)</h3>
+                                <ul class="list-disc list-inside space-y-1 text-[var(--text-muted)]">
+                                    <li><strong>Learner-Content:</strong> การโต้ตอบระหว่างผู้เรียนกับเนื้อหาความรู้</li>
+                                    <li><strong>Learner-Instructor:</strong> การโต้ตอบระหว่างผู้เรียนกับผู้สอนหรือผู้ช่วยสอน</li>
+                                    <li><strong>Learner-Learner:</strong> การอภิปรายและแลกเปลี่ยนเรียนรู้ระหว่างผู้เรียนด้วยกัน</li>
+                                </ul>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-1">
+                                <h3 class="font-heading font-bold text-brand-600">♿ มาตรฐานการเข้าถึง WCAG 2.x AA</h3>
+                                <ul class="list-disc list-inside space-y-1 text-[var(--text-muted)]">
+                                    <li><strong>Color Contrast:</strong> อัตราส่วนความต่างสีตัวอักษรปกติกับพื้นหลังต้องอย่างน้อย 4.5:1 (ข้อความใหญ่ 3:1)</li>
+                                    <li><strong>Text Alternatives (Alt text):</strong> มีคำอธิบายภาพสำหรับโปรแกรมอ่านจอภาพ</li>
+                                    <li><strong>Captions:</strong> มีคำบรรยายแทนเสียงในคลิปวิดีโอสำหรับผู้มีความบกพร่องทางการได้ยิน</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)] pt-2">แหล่งอ้างอิง: Moore, M. G. (1989). Three types of interaction. American Journal of Distance Education.</p>
+                    </div>
+                `;
+            } else if (subPage === 2) {
+                // Interactive Activity: Diagnose slide scenario
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 3 (หน้า 3/4: กิจกรรมโต้ตอบ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">กิจกรรม: วินิจฉัยปัญหาสไลด์สื่อการสอน</h2>
+                        <p class="text-sm text-[var(--text-muted)]">เลือกหลักการของ Mayer ที่ถูกละเมิดในสถานการณ์ต่อไปนี้</p>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="text-sm font-medium">สถานการณ์: สไลด์แสดงหน้าจอที่มีเสียงบรรยายเนื้อหาคำต่อคำพร้อมกับมีตัวหนังสือวิ่งแสดงผลข้อความเดียวกันเป๊ะบนหน้าจอ</p>
+                                <select id="mayer_diag_1" class="w-full p-2 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-sm">
+                                    <option value="">-- เลือกหลักการที่ถูกละเมิด --</option>
+                                    <option value="redundancy">Redundancy (ความซ้ำซ้อนของข้อความและเสียง)</option>
+                                    <option value="coherence">Coherence (ความสอดคล้อง)</option>
+                                    <option value="signaling">Signaling (การชี้นำ)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="mayer-feedback" class="text-sm font-medium"></div>
+                        <button onclick="checkMayerActivity()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors">ตรวจสอบวินิจฉัย</button>
+                    </div>
+                `;
+            } else {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 3 (หน้า 4/4: ตรวจความเข้าใจ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">ตรวจสอบความเข้าใจ บทที่ 3</h2>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">1. ตามมาตรฐาน WCAG 2.x AA อัตราส่วนความต่างสี (Contrast) ของตัวอักษรปกติกับพื้นหลังควรมีค่าอย่างน้อยเท่าใด?</p>
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l3q1" value="0" onchange="checkLessonQuiz(3, 1, 0)"><span>ก. 2:1</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l3q1" value="1" onchange="checkLessonQuiz(3, 1, 1)"><span>ข. 4.5:1</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l3q1" value="2" onchange="checkLessonQuiz(3, 1, 2)"><span>ค. 10:1</span></label>
+                                </div>
+                                <div id="l3q1_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">2. หลักการใดของ Mayer แนะนำให้ตัดสิ่งเร้าหรือเสียงดนตรีแบ็คกราウンドที่ไม่เกี่ยวข้องออก?</p>
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l3q2" value="0" onchange="checkLessonQuiz(3, 2, 0)"><span>ก. Coherence (ความสอดคล้อง)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l3q2" value="1" onchange="checkLessonQuiz(3, 2, 1)"><span>ข. Segmenting (การแบ่งส่วน)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l3q2" value="2" onchange="checkLessonQuiz(3, 2, 2)"><span>ค. Spatial Contiguity (ความต่อเนื่องทางพื้นที่)</span></label>
+                                </div>
+                                <div id="l3q2_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return wrapLessonShell('lesson3', 'บทที่ 3: การออกแบบสื่อและกิจกรรม', contentHtml, subPage, pagesTotal);
+        }
+
+        function checkMayerActivity() {
+            const val = document.getElementById('mayer_diag_1').value;
+            const fb = document.getElementById('mayer-feedback');
+
+            if (val === 'redundancy') {
+                fb.className = "text-sm font-medium text-emerald-600 dark:text-emerald-400";
+                fb.innerText = "🎉 ถูกต้อง! การแสดงข้อความตัวอักษรซ้ำกับเสียงบรรยายทุกประการละเมิดหลัก Redundancy Principle";
+                state.activitiesCompleted.lesson3 = true;
+                saveState();
+                updateProgressIndicators();
+            } else {
+                fb.className = "text-sm font-medium text-red-600 dark:text-red-400";
+                fb.innerText = "❌ ยังไม่ถูกต้อง ลองพิจารณาผลกระทบจากการอ่านตัวหนังสือพร้อมกับฟังเสียงบรรยายแบบคำต่อคำ";
+            }
+        }
+
+        function renderLesson4() {
+            const subPage = state.currentSubPage.lesson4 || 0;
+            const pagesTotal = 4;
+
+            let contentHtml = '';
+            if (subPage === 0) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 4 (หน้า 1/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">การวัดผล Normalized Gain และโมเดล Kirkpatrick</h2>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-1">
+                                <h3 class="font-heading font-bold text-brand-600">📈 Normalized Gain (<math>g</math>) ตามสูตรของ Hake (1998)</h3>
+                                <p class="text-[var(--text-muted)]">ใช้คำนวณวัดความก้าวหน้าทางการเรียนรู้โดยขจัดผลกระทบจากคะแนนก่อนเรียน:</p>
+                                <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded text-center font-mono font-bold text-brand-700 dark:text-brand-300">
+                                    g = ( คะแนนหลังเรียน - คะแนนก่อนเรียน ) / ( คะแนนเต็ม - คะแนนก่อนเรียน )
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <h3 class="font-heading font-bold text-brand-600">🎯 การประเมิน 4 ระดับของ Kirkpatrick</h3>
+                                <ul class="list-disc list-inside space-y-1 text-[var(--text-muted)]">
+                                    <li><strong>Level 1 (Reaction):</strong> วัดความพึงพอใจและความคิดเห็นของผู้เรียน</li>
+                                    <li><strong>Level 2 (Learning):</strong> วัดความรู้ความเข้าใจที่เพิ่มขึ้น (Pre-Post Test)</li>
+                                    <li><strong>Level 3 (Behavior):</strong> วัดการนำไปปฏิบัติงานจริงในห้องเรียน</li>
+                                    <li><strong>Level 4 (Results):</strong> วัดผลลัพธ์และความสำเร็จขององค์กรหรือผู้เรียนในระยะยาว</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)] pt-2">แหล่งอ้างอิง: Hake, R. R. (1998). Interactive-engagement versus traditional methods. Kirkpatrick, D. L. (1994).</p>
+                    </div>
+                `;
+            } else if (subPage === 1) {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 4 (หน้า 2/4)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">มาตรฐาน SCORM, xAPI และจริยธรรมข้อมูล</h2>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <h3 class="font-heading font-bold text-brand-600">📦 SCORM vs xAPI เบื้องต้น</h3>
+                                <p class="text-[var(--text-muted)]"><strong>SCORM:</strong> มาตรฐานดั้งเดิมในการเก็บบันทึกสถานะการเรียน (Completed/Passed) บน LMS ทั่วไป<br><strong>xAPI (Experience API):</strong> มาตรฐานสมัยใหม่ที่เก็บบันทึกทุกประสบการณ์การเรียนรู้ผ่านโครงสร้างประโยค <strong>Actor - Verb - Object</strong> (เช่น นักศึกษา - ทำกิจกรรมสำเร็จ - บทเรียนที่ 1)</p>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <h3 class="font-heading font-bold text-brand-600">🔒 จริยธรรมการเก็บข้อมูลการเรียนรู้</h3>
+                                <p class="text-[var(--text-muted)]">การเก็บข้อมูลการใช้งานและคะแนนของผู้เรียนต้องแจ้งวัตถุประสงค์ให้ชัดเจน ขอความยินยอม และเก็บเฉพาะข้อมูลที่จำเป็นเพื่อการพัฒนาการเรียนการสอนเท่านั้น ห้ามเปิดเผยข้อมูลส่วนบุคคลต่อสาธารณะ</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (subPage === 2) {
+                // Interactive Activity: Match evidence with Kirkpatrick level
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 4 (หน้า 3/4: กิจกรรมโต้ตอบ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">กิจกรรม: จับคู่หลักฐานกับระดับ Kirkpatrick</h2>
+                        <p class="text-sm text-[var(--text-muted)]">เลือกชื่อระดับ Kirkpatrick ให้ตรงกับหลักฐานการประเมินที่กำหนด</p>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="text-sm font-medium">หลักฐาน: แบบประเมินความพึงพอใจหลังเรียนจบหลักสูตร e-Learning (Smile Sheet)</p>
+                                <select id="kp_match_1" class="w-full p-2 rounded border border-[var(--border-color)] bg-[var(--bg-card)] text-sm">
+                                    <option value="">-- เลือกระดับ Kirkpatrick --</option>
+                                    <option value="1">Level 1: Reaction (ความพึงพอใจ)</option>
+                                    <option value="2">Level 2: Learning (การเรียนรู้)</option>
+                                    <option value="3">Level 3: Behavior (พฤติกรรม)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="kp-feedback" class="text-sm font-medium"></div>
+                        <button onclick="checkKpActivity()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors">ตรวจสอบหลักฐาน</button>
+                    </div>
+                `;
+            } else {
+                contentHtml = `
+                    <div class="space-y-4">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">บทที่ 4 (หน้า 4/4: ตรวจความเข้าใจ)</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">ตรวจสอบความเข้าใจ บทที่ 4</h2>
+                        
+                        <div class="space-y-4 pt-2">
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">1. โครงสร้างประโยคข้อมูลใน xAPI ประกอบด้วยองค์ประกอบหลัก 3 ส่วนตามข้อใด?</p>
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l4q1" value="0" onchange="checkLessonQuiz(4, 1, 0)"><span>ก. Question - Answer - Score</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l4q1" value="1" onchange="checkLessonQuiz(4, 1, 1)"><span>ข. Actor - Verb - Object</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l4q1" value="2" onchange="checkLessonQuiz(4, 1, 2)"><span>ค. Input - Process - Output</span></label>
+                                </div>
+                                <div id="l4q1_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+
+                            <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
+                                <p class="font-heading font-medium text-sm">2. หากต้องการประเมินว่าผู้เรียนนำความรู้ไปปฏิบัติจริงในห้องเรียน ตรงกับ Kirkpatrick ระดับใด?</p>
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l4q2" value="0" onchange="checkLessonQuiz(4, 2, 0)"><span>ก. Level 1 (Reaction)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l4q2" value="1" onchange="checkLessonQuiz(4, 2, 1)"><span>ข. Level 2 (Learning)</span></label>
+                                    <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="radio" name="l4q2" value="2" onchange="checkLessonQuiz(4, 2, 2)"><span>ค. Level 3 (Behavior)</span></label>
+                                </div>
+                                <div id="l4q2_fb" class="text-xs font-medium pt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return wrapLessonShell('lesson4', 'บทที่ 4: การวัดผลและข้อมูลการเรียนรู้', contentHtml, subPage, pagesTotal);
+        }
+
+        function checkKpActivity() {
+            const val = document.getElementById('kp_match_1').value;
+            const fb = document.getElementById('kp-feedback');
+
+            if (val === '1') {
+                fb.className = "text-sm font-medium text-emerald-600 dark:text-emerald-400";
+                fb.innerText = "🎉 ถูกต้อง! แบบประเมินความพึงพอใจจัดอยู่ใน Level 1: Reaction ตามโมเดลของ Kirkpatrick";
+                state.activitiesCompleted.lesson4 = true;
+                saveState();
+                updateProgressIndicators();
+            } else {
+                fb.className = "text-sm font-medium text-red-600 dark:text-red-400";
+                fb.innerText = "❌ ยังไม่ถูกต้อง ความพึงพอใจสะท้อนปฏิกิริยาตอบสนองเบื้องต้นของผู้เรียน";
+            }
+        }
+
+        function wrapLessonShell(lessonKey, lessonTitle, contentHtml, subPage, pagesTotal) {
+            return `
+                <div class="bg-[var(--bg-card)] border border-[var(--border-color)] p-6 md:p-8 rounded-2xl shadow-sm space-y-6">
+                    <div class="border-b border-[var(--border-color)] pb-4 flex items-center justify-between">
+                        <span class="text-xs font-bold text-brand-600 uppercase tracking-wider font-heading">${lessonTitle}</span>
+                        <span class="text-xs text-[var(--text-muted)]">หน้า ${subPage + 1} / ${pagesTotal}</span>
+                    </div>
+
+                    ${contentHtml}
+
+                    <div class="flex items-center justify-between pt-6 border-t border-[var(--border-color)]">
+                        <button onclick="changeLessonPage('${lessonKey}', -1)" ${subPage === 0 ? 'disabled' : ''} class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg text-sm font-medium disabled:opacity-40 transition-colors">
+                            ⬅️ ก่อนหน้า
+                        </button>
+                        <button onclick="changeLessonPage('${lessonKey}', 1)" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                            ${subPage === pagesTotal - 1 ? 'จบบทเรียน ➔' : 'ถัดไป ➔'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function changeLessonPage(lessonKey, delta) {
+            const current = state.currentSubPage[lessonKey] || 0;
+            const next = current + delta;
+            if (next >= 0 && next < 4) {
+                state.currentSubPage[lessonKey] = next;
+                saveState();
+                render();
+            } else if (next >= 4) {
+                // Advance to next lesson or posttest
+                if (lessonKey === 'lesson1') router.navigateTo('lesson2');
+                else if (lessonKey === 'lesson2') router.navigateTo('lesson3');
+                else if (lessonKey === 'lesson3') router.navigateTo('lesson4');
+                else if (lessonKey === 'lesson4') router.navigateTo('posttest');
+            }
+        }
+
+        // Inline quick quiz checking logic for lessons
+        function checkLessonQuiz(lessonNum, qNum, selectedVal) {
+            // Correct answers mapping
+            const answersMap = {
+                1: { 1: 1, 2: 1 },
+                2: { 1: 1, 2: 2 },
+                3: { 1: 1, 2: 0 },
+                4: { 1: 1, 2: 2 }
+            };
+
+            const isCorrect = answersMap[lessonNum][qNum] === selectedVal;
+            const fbEl = document.getElementById(`l${lessonNum}q${qNum}_fb`);
+            if (fbEl) {
+                if (isCorrect) {
+                    fbEl.className = "text-xs font-medium text-emerald-600 dark:text-emerald-400";
+                    fbEl.innerText = "✅ ถูกต้องครับ!";
+                } else {
+                    fbEl.className = "text-xs font-medium text-red-600 dark:text-red-400";
+                    fbEl.innerText = "❌ ยังไม่ถูกต้อง ลองทบทวนเนื้อหาในบทเรียนอีกครั้ง";
+                }
+            }
+        }
+
+        function renderSummary() {
+            const pre = state.pretestScore !== null ? state.pretestScore : 0;
+            const post = state.posttestScore !== null ? state.posttestScore : 0;
+            const total = 8;
+
+            // Normalized Gain Calculation: (post - pre) / (total - pre)
+            let gain = 0;
+            let denominator = total - pre;
+            if (denominator > 0) {
+                gain = (post - pre) / denominator;
+            } else if (denominator === 0 && post === total) {
+                gain = 1.0; // Perfect score from pre-test
+            }
+
+            // Handle negative gain if post < pre
+            let gainDisplay = gain.toFixed(2);
+            let interpretation = "";
+            let limitationNote = "หมายเหตุ: แบบทดสอบนี้มีจำนวนข้อจำกัด (8 ข้อ) ผลการประเมินรายบุคคลนี้จึงควรใช้เป็นแนวทางพัฒนาตนเองเบื้องต้นเท่านั้น";
+
+            if (denominator === 0 && pre === total) {
+                interpretation = "ผู้เรียนทำคะแนนก่อนเรียนเต็มอยู่แล้ว (Ceiling Effect) ความก้าวหน้าสูงสุด";
+            } else if (gain >= 0.7) {
+                interpretation = "ความก้าวหน้าสูงมาก (High Gain) ตามเกณฑ์ของ Hake (g ≥ 0.7)";
+            } else if (gain >= 0.3) {
+                interpretation = "ความก้าวหน้าปานกลาง (Medium Gain) ตามเกณฑ์ของ Hake (0.3 ≤ g < 0.7)";
+            } else if (gain > 0) {
+                interpretation = "ความก้าวหน้าต่ำ (Low Gain) ตามเกณฑ์ของ Hake (g < 0.3)";
+            } else {
+                interpretation = "คะแนนหลังเรียนเท่ากับหรือน้อยกว่าก่อนเรียน (Non-positive gain) อาจเกิดจากความล้าในการทำแบบทดสอบหรือการเดาในรอบแรก";
+                if (gain < 0) gainDisplay = gain.toFixed(2);
+            }
+
+            // Completed lessons count
+            let completedLessonsCount = Object.values(state.activitiesCompleted).filter(Boolean).length;
+
+            return `
+                <div class="bg-[var(--bg-card)] border border-[var(--border-color)] p-6 md:p-8 rounded-2xl shadow-sm space-y-6">
+                    <div class="space-y-1">
+                        <span class="inline-block bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-full text-xs font-semibold">สรุปผลการเรียนรู้</span>
+                        <h2 class="font-heading font-bold text-2xl text-brand-800 dark:text-brand-400">รายงานผลสัมฤทธิ์ทางการเรียน</h2>
+                        <p class="text-[var(--text-muted)] text-sm">ผู้เรียน: <strong class="text-[var(--text-main)]">${state.nickname || 'ผู้เรียนทั่วไป'}</strong></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-center space-y-1">
+                            <span class="text-xs text-[var(--text-muted)]">คะแนนก่อนเรียน (Pre-Test)</span>
+                            <div class="font-heading font-bold text-2xl text-slate-700 dark:text-slate-200">${state.pretestScore !== null ? state.pretestScore : 'ยังไม่ทำ'} / 8</div>
+                        </div>
+                        <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-center space-y-1">
+                            <span class="text-xs text-[var(--text-muted)]">คะแนนหลังเรียน (Post-Test)</span>
+                            <div class="font-heading font-bold text-2xl text-brand-600">${state.posttestScore !== null ? state.posttestScore : 'ยังไม่ทำ'} / 8</div>
+                        </div>
+                        <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-center space-y-1">
+                            <span class="text-xs text-[var(--text-muted)]">Normalized Gain (<math>g</math>)</span>
+                            <div class="font-heading font-bold text-2xl text-emerald-600 dark:text-emerald-400">${gainDisplay}</div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] space-y-2 text-sm">
+                        <h3 class="font-heading font-bold text-brand-600">📊 การตีความผลลัพธ์และข้อจำกัด</h3>
+                        <p><strong>การตีความ Gain:</strong> ${interpretation}</p>
+                        <p><strong>บทเรียนที่ทำกิจกรรมสำเร็จ:</strong> ${completedLessonsCount} / 4 บท</p>
+                        <p class="text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">${limitationNote}</p>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button onclick="router.navigateTo('posttest')" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300">⬅️ กลับไปแบบทดสอบหลังเรียน</button>
+                        <button onclick="window.print()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium shadow-sm">🖨️ พิมพ์/บันทึกรายงานผล</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function render() {
+            const container = document.getElementById('page-container');
+            if (!container) return;
+
+            if (state.currentPage === 'home') {
+                container.innerHTML = renderHome();
+            } else if (state.currentPage === 'pretest') {
+                container.innerHTML = renderTestPage('pre');
+            } else if (state.currentPage === 'lesson1') {
+                container.innerHTML = renderLesson1();
+                renderAddieList();
+            } else if (state.currentPage === 'lesson2') {
+                container.innerHTML = renderLesson2();
+            } else if (state.currentPage === 'lesson3') {
+                container.innerHTML = renderLesson3();
+            } else if (state.currentPage === 'lesson4') {
+                container.innerHTML = renderLesson4();
+            } else if (state.currentPage === 'posttest') {
+                container.innerHTML = renderTestPage('post');
+            } else if (state.currentPage === 'summary') {
+                container.innerHTML = renderSummary();
+            }
+
+            updateSidebarActive();
+        }
+
+        // Mobile Sidebar Drawer Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeSidebarBtn = document.getElementById('close-sidebar');
+        const sidebar = document.getElementById('sidebar');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.remove('-translate-x-full');
+        });
+
+        closeSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+        });
+
+        // Initialize App on Window Load
+        window.onload = function() {
+            loadState();
+            if (state.nickname) {
+                document.getElementById('header-nickname').innerText = state.nickname;
+                document.getElementById('user-display').classList.remove('hidden');
+            }
+            render();
+        };
+    </script>
+</body>
+</html>
